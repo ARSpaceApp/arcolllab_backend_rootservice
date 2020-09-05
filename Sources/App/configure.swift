@@ -1,21 +1,23 @@
-import Fluent
-import FluentPostgresDriver
 import Vapor
+import JWT
 
-// configures your application
 public func configure(_ app: Application) throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-
-    app.databases.use(.postgres(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database"
-    ), as: .psql)
-
-    app.migrations.add(CreateTodo())
-
-    // register routes
+    
+    // MARK: ServerConfig
+    app.http.server.configuration.port = 8080
+    
+    // MARK: Middlewares
+    app.middleware.use(CORSMiddleware())
+    app.middleware.use(ErrorMiddleware.default(environment: .development))
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    
+    // MARK: JWT
+    guard let jwksString = Environment.process.JWKS else {
+        app.logger.critical("No value for key 'JWKS' was found in environment.")
+        fatalError()
+    }
+    try app.jwt.signers.use(jwksJSON: jwksString)
+    
+    // MARK: Routes
     try routes(app)
 }
