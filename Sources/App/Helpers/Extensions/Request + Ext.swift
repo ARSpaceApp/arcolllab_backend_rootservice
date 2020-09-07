@@ -6,34 +6,36 @@ import JWT
 
 extension Request {
 
-    public var payload: Payload {
+    public var usersPayload: UsersPayload {
         get {
-            self.route?.userInfo[.payload] as! Payload
+            self.route?.userInfo[.payload] as! UsersPayload
         }
         set {
             self.route?.userInfo[.payload] = newValue
         }
     }
+    
+    public var microservicesPayload: MicroservicesPayload {
+        get {
+            self.route?.userInfo[.microservicesPayload] as! MicroservicesPayload
+        }
+        set {
+            self.route?.userInfo[.microservicesPayload] = newValue
+        }
+    }
 
     public var accessRight: AccessRight {
         get {
-            self.route?.userInfo[.init(RouteUserInfoKeys.accessRight)] as! AccessRight
+            self.route?.userInfo[.accessRight] as! AccessRight
         }
         set {
-            self.route?.userInfo[.init(RouteUserInfoKeys.accessRight)] = newValue
+            self.route?.userInfo[accessRight] = newValue
         }
     }
 }
 
-enum RouteUserInfoKeys : Int, CaseIterable {
-    case accessRight
-
-    var name : String {
-        switch self {
-  
-        case .accessRight:
-            return "accessRight"
-        }
-    }
+extension AnyHashable {
+    static let payload: String = "jwt_payload"
+    static let microservicesPayload: String = "jwt_microservicesPayload"
+    static let accessRight : String = "accessRight"
 }
-

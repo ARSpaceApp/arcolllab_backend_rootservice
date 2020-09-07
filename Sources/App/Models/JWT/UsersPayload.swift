@@ -5,7 +5,7 @@ import JWT
 import Vapor
 import SwiftHelperCode
 
-public struct Payload : JWTPayload {
+public struct UsersPayload : JWTPayload {
 
     enum CodingKeys: String, CodingKey {
         case subject        = "sub"
@@ -29,6 +29,17 @@ public struct Payload : JWTPayload {
     }
 }
 
-extension AnyHashable {
-    static let payload: String = "jwt_payload"
+public struct MicroservicesPayload: JWTPayload, Equatable {
+    
+    enum CodingKeys: String, CodingKey {
+        case subject = "sub"
+        case expiration = "exp"
+    }
+
+    var subject: SubjectClaim
+    var expiration: ExpirationClaim
+    
+    public func verify(using signer: JWTSigner) throws {
+        try self.expiration.verifyNotExpired()
+    }
 }

@@ -26,7 +26,7 @@ final class UsersController {
         )
     }
      
-    func jsonUsersGetAll(req: Request) throws -> EventLoopFuture<[UserResponse01]> {
+    func jsonUsersGetAll(req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonUsersGetAll (
             req: req,
             clientRoute: USVarsAndRoutes.usersServiceUsersRoute.description
@@ -47,22 +47,21 @@ extension UsersController : RouteCollection {
         // example: http://127.0.0.1:8080/v1.1/users
         let users = routes.grouped(.anything, "users")
         
+        let auth = users.grouped(JWTMiddleware())
         
+        //        // example: http://127.0.0.1:8080/v1.1/users/signup
+                //usersRoute001
+        //        users.post("signup", use: self.jsonUserSignUp)
         
         // example: http://127.0.0.1:8080/v1.1/users/signin
         // usersRoute002
         users.post("signin", use: self.jsonUserSignIn)
-        
+
         // example: http://127.0.0.1:8080/v1.1/users
-        let usersRoute003 = users.get(use: self.jsonUsersGetAll)
-        usersRoute003.userInfo[RouteUserInfoKeys.accessRight] =
-          AccessRight(rights: [.superAdmin, .admin], statuses: [.confirmed])
-        
-        
-        
-//        // example: http://127.0.0.1:8080/v1.1/users/signup
-        //usersRoute001
-//        users.post("signup", use: self.jsonUserSignUp)
+        let usersRoute003 = auth.get(use: self.jsonUsersGetAll)
+        usersRoute003.userInfo[.accessRight] =
+            AccessRight(rights: [.superAdmin, .admin], statuses: [.confirmed])
+
         
 //        // example: http://127.0.0.1:8080/v1.1/users/:userParameter
 //        let user = users.grouped(":userParameter")

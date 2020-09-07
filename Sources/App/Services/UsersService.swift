@@ -11,7 +11,7 @@ protocol UsersService {
     
     func jsonUserSignIn(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse>
     
-    func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<[UserResponse01]>
+    func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
 }
 
 final class UsersServiceImplementation : UsersService {
@@ -46,7 +46,13 @@ final class UsersServiceImplementation : UsersService {
     
     func jsonUserSignIn(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse> {
         
-        return req.client.post(URI(string: clientRoute), beforeSend: { request in
+        let token = try makeMicroservicesAccessToken(req: req)
+        
+        print(token)
+        
+        let headers = HTTPHeaders([("Authorization", "Bearer \(token)")])
+        
+        return req.client.post(URI(string: clientRoute), headers: headers, beforeSend: { request in
             
             let input = try req.content.decode(UserInputDirectSighIn01.self)
             try request.content.encode(input)
@@ -86,8 +92,11 @@ final class UsersServiceImplementation : UsersService {
         }
     }
     
-    func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<[UserResponse01]> {
-        fatalError()
+    func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        
+        return req.client.get(URI(string: clientRoute), headers: req.headers).flatMap {res  in
+            return req.eventLoop.future(res)
+        }
     }
     
     // MARK: Private functions
@@ -106,7 +115,7 @@ final class UsersServiceImplementation : UsersService {
         let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
         
         // 1. Generate the payload
-        let accessTokenPayload = Payload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!), userid: userId, username: username, userRights: rights, userStatus: status)
+        let accessTokenPayload = UsersPayload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!), userid: userId, username: username, userRights: rights, userStatus: status)
        
         // 2. Generate accessToken.
         let accessToken = try req.application.jwt.signers.sign(accessTokenPayload)
@@ -119,6 +128,13 @@ final class UsersServiceImplementation : UsersService {
         
         // 5. Return.
         return RefreshTokenResponse01(accessToken: accessToken, refreshToken: refreshToken)
+    }
+    
+    fileprivate func makeMicroservicesAccessToken(req: Request) throws -> String {
+        let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
+        let accessTokenPayload = MicroservicesPayload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!))
+        return try req.application.jwt.signers.sign(accessTokenPayload)
+    
     }
     
     

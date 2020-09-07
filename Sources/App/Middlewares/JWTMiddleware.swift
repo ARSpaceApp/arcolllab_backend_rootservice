@@ -17,7 +17,7 @@ public final class JWTMiddleware: Middleware {
         
         do {
             // 2. Verifies payload from accessToken.
-            request.payload = try request.jwt.verify(Array(token), as: Payload.self)
+            request.usersPayload = try request.jwt.verify(Array(token), as: UsersPayload.self)
             
             // 2.1 Check compliance of route access rules with user rights.
             try self.checkingComplianceWithAccessRightsForCurrentRoute(req: request, accessToken: token)
@@ -42,11 +42,11 @@ public final class JWTMiddleware: Middleware {
      private func checkingComplianceWithAccessRightsForCurrentRoute (req: Request, accessToken: String.UTF8View) throws {
 
          // 1. Getting payload from access Token.
-         let payload = try req.jwt.verify(Array(accessToken), as: Payload.self)
+         let payload = try req.jwt.verify(Array(accessToken), as: UsersPayload.self)
 
          // 2. Getting access rules from userInfo of passed route.
          // 2.1 If access rights are present in passed route.
-         if let routeAccessRight = req.route?.userInfo[RouteUserInfoKeys.accessRight] as? AccessRight {
+        if let routeAccessRight = req.route?.userInfo[.accessRight] as? AccessRight {
              // 3. If route contains access rights by status:
              if let routeAccessRightStatuses = routeAccessRight.statuses {
                  // 3.1 If access rights of route by status and user status do not match:
