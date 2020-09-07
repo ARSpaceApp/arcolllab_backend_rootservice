@@ -20,12 +20,3 @@ struct RefreshToken: JWTPayload {
         let expiration = Date(timeIntervalSince1970: self.exp)
         try ExpirationClaim(value: expiration).verifyNotExpired() }
 }
-
-struct RefreshTokenInput: Content {
-    let refreshToken: String
-}
-
-struct RefreshTokenResponse: Content {
-    let accessToken: String
-    let refreshToken: String
-}

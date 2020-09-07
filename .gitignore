@@ -1,9 +1,9 @@
 Packages
-.build
-xcuserdata
+.build/
 *.xcodeproj
 DerivedData/
 .DS_Store
-db.sqlite
-.swiftpm
+*.xcodeproj
+*.env
+*.jwks
 

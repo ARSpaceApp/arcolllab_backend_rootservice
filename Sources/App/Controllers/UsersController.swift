@@ -2,6 +2,8 @@
 //  Created by Dmitry Samartcev on 05.09.2020.
 
 import Vapor
+import SwiftHelperCode
+
 
 enum API : Int, CaseIterable {
    
@@ -19,28 +21,87 @@ enum API : Int, CaseIterable {
 }
 
 final class UsersController {
+    
+    private var usersService: UsersService!
+    
+    init (usersService: UsersService) {
+        self.usersService = usersService
+    }
+    
+    func jsonUserSignUp(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
+        return try self.usersService.jsonUserSignUp (
+            req: req,
+            clientRoute: "\(API.usersRoute.description)/signup"
+        )
+    }
+    
+    func jsonUserUpdate(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
+        return try self.usersService.jsonUserSignUp (
+            req: req,
+            clientRoute: "\(API.usersRoute.description)/signup"
+        )
+    }
 }
 
 extension UsersController : RouteCollection {
     func boot(routes: RoutesBuilder) throws {
     
+        // example: http://127.0.0.1:8080/v1.1/users
         let users = routes.grouped(.anything, "users")
-        let usersSignIn = users.post("signin") { req in
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            return req.eventLoop.makeSucceededFuture("Dummy")
-        }
         
+        // example: http://127.0.0.1:8080/v1.1/users/signup
+        users.post("signup", use: self.jsonUserSignUp)
+        
+        // example: http://127.0.0.1:8080/v1.1/users/:userParameter
+        let user = users.grouped(":userParameter")
+        
+        
+        
+//        user.patch(use: self.jsonUserUpdate)
+        
+        
+
+//            let data = req.body.string.data(using: .utf8)!
+//            do {
+//                if let jsonArray = try JSONSerialization.jsonObject(with: data, options : .allowFragments) as? [Dictionary<String,String>]
+//                {
+//                   print(jsonArray) // use the json here
+//                    return req.eventLoop.makeSucceededFuture(jsonArray)
+//                } else {
+//                    throw Abort(.badRequest, reason: "error")
+//                }
+//            } catch let error as NSError {
+//                throw Abort(.badRequest, reason: "error")
+//            }
+//
+//            //return req.eventLoop.makeSucceededFuture("Dummy")
+//        }
+        
+        
+       // users.po
+    
+        
+        //// example: http://127.0.0.1:8080/v1.1/users/signup
+       // root.post("signup", use: self.json_userDirectSignUp)
+        
+        
+        
+//        let usersSignIn = users.post("signin") { req in
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//            return req.eventLoop.makeSucceededFuture("Dummy")
+//        }
+//
         
         
         
@@ -85,4 +146,3 @@ extension UsersController : RouteCollection {
 // 2. Получение от сервиса ответа и валидация по коду
 // 3. Если 200 - прилепить токены и отдать
 // 3.1 Если не 200 - вернуть как есть
-

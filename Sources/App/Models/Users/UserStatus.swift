@@ -20,8 +20,8 @@ struct UserStatus : OptionSet, Codable, CustomStringConvertible, Hashable {
     }
     
     static let created      = UserStatus(rawValue: 1 << 0)
-    static let confirmed    = UserStatus(rawValue: 1 << 1)
-    static let blocked      = UserStatus(rawValue: 1 << 2)
+    static let confirmed    = UserStatus(rawValue: 1 << 1) // 2
+    static let blocked      = UserStatus(rawValue: 1 << 2) // 3
     static let archived     = UserStatus(rawValue: 1 << 3)
 
     var description: String {

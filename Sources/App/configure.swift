@@ -57,7 +57,88 @@ public func configure(_ app: Application) throws {
         try app.autoMigrate().wait()
         app.logger.notice("Migration complete.")
     }
+    
+//    // MARK: Check services
+//    // UsersService check
+//    let usersServiceEnvKey = ServicesRoutes.usersServiceEnvKey.description
+//    guard let usersService = Environment.process.usersServiceEnvKey else {
+//
+//        let error = "No value was found in environment for key: '\(usersServiceEnvKey))'"
+//        app.logger.critical("\(error)")
+//        throw Abort(HTTPStatus.internalServerError, reason: "\(error)")
+//    }
+//    AppValues.servicesRoutes[.usersServiceHomeRoute] = usersService
+//
+//    // ModelsService check
+//    let modelsServiceEnvKey = ServicesRoutes.modelsServiceEnvKey.description
+//    guard let modelsService = Environment.process.modelsServiceEnvKey else {
+//
+//        let error = "No value was found in environment for key: '\(modelsServiceEnvKey))'"
+//        app.logger.critical("\(error)")
+//        throw Abort(HTTPStatus.internalServerError, reason: "\(error)")
+//    }
+//    AppValues.servicesRoutes[.modelsServiceHomeRoute] = modelsService
+//
+//    // TODO: Подклються на home роуты и проверить на 200
+//    // ...
 
     // MARK: Routes
-    try routes(app)
+    
+    // Store superAdmin userAccessRights.
+    // By default, userId of superadmin is set to 1.
+    let superAdminUserAccessRights = try UserAccessRights(userId: 1, userStatus: .confirmed, userRights: .superAdmin)
+    let saveResult = try storeSuperAdminUserAccessRights(db: app.db, accessRights: superAdminUserAccessRights, logger: app.logger).wait()
+    
+    if saveResult {
+        try routes(app)
+    } else {
+        let error = "Unable to save UserAccessRights for superadmin."
+        app.logger.critical("\(error)")
+        throw Abort(HTTPStatus.internalServerError, reason: "\(error)")
+    }
+}
+
+
+fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: UserAccessRights, logger: Logger) -> EventLoopFuture<Bool> {
+    
+    return UserAccessRights.find(accessRights.id, on: db).flatMap {existingAccessRights in
+        
+        if let superAdminAccessRights = existingAccessRights {
+            superAdminAccessRights.userId = accessRights.userId
+            superAdminAccessRights.userRights = accessRights.userRights
+            superAdminAccessRights.userStatus = accessRights.userStatus
+            
+            return superAdminAccessRights.update(on: db).map { _ in
+                logger.notice("UserAccessRights for superadmin updated.")
+                return true
+            }
+            
+        } else {
+            return accessRights.save(on: db).map{ _ in
+                logger.notice("UserAccessRights for superadmin updated.")
+                return true
+            }
+        }
+    }
+}
+
+
+enum ServicesRoutes : Int, CaseIterable {
+    case usersServiceEnvKey
+    case modelsServiceEnvKey
+    case usersServiceHomeRoute
+    case modelsServiceHomeRoute
+    
+    var description : String {
+        switch self {
+        case .usersServiceEnvKey:
+            return "SERVICE_USERS_URL"
+        case .modelsServiceEnvKey:
+            return "SERVICE_MODELS_URL"
+        case .usersServiceHomeRoute:
+            return ""
+        case .modelsServiceHomeRoute:
+            return ""
+        }
+    }
 }
