@@ -6,12 +6,16 @@ import Fluent
 import SwiftHelperCode
 
 protocol UsersService {
-    
+
     func jsonUserSignUp(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse>
+    
+    func jsonUserSignIn(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse>
+    
+    func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<[UserResponse01]>
 }
 
 final class UsersServiceImplementation : UsersService {
-    
+ 
     func jsonUserSignUp(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse> {
   
         return req.client.post(URI(string: clientRoute)).flatMapThrowing {res -> (EventLoopFuture<(Void)>, UserResponse01, UserAccessRights) in
@@ -38,6 +42,52 @@ final class UsersServiceImplementation : UsersService {
             // Response&
             return req.eventLoop.makeSucceededFuture(UserWithTokensResponse(tokens: tokens, user: userResponse))
         }.flatMap{$0}
+    }
+    
+    func jsonUserSignIn(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse> {
+        
+        return req.client.post(URI(string: clientRoute), beforeSend: { request in
+            
+            let input = try req.content.decode(UserInputDirectSighIn01.self)
+            try request.content.encode(input)
+            
+        }).flatMapThrowing {res -> UserResponse01 in
+            
+            if res.status == .ok {
+                return try res.content.decode(UserResponse01.self)
+            } else {
+                let jsonDict = try! JSONSerialization.jsonObject(with: Data(buffer: res.body!)) as! [String : Any]
+                if let reason = jsonDict["reason"] {
+                    throw Abort(res.status, reason: "\(String(describing: reason))")
+                } else {
+                    throw Abort(res.status, reason: "")
+                }
+            }
+        }.flatMap {userResponse in
+            
+            return UserAccessRights.find(userResponse.id!, on: req.db).flatMapThrowing {userAccessRights -> (UserResponse01, UserAccessRights) in
+                
+                guard let existingUserAccessRights = userAccessRights else {
+                    throw Abort (.badRequest, reason: "There is no current status and access rights for user '\(userResponse.username!)'")
+                }
+                
+                guard existingUserAccessRights.userStatus != .blocked, existingUserAccessRights.userStatus != .archived else {
+                    throw Abort (HTTPStatus.forbidden, reason: "Status of user '\(userResponse.username!)' is blocked or deleted. Contact  administration of service on issue of restoring access.")
+                }
+                
+                return (userResponse, userAccessRights!)
+            }
+            
+        }.flatMapThrowing {userResponse, userAccessRights in
+            
+            let tokens = try self.createTokens(req: req, userId: userResponse.id!, username: userResponse.username!, rights: userAccessRights.userRights, status: userAccessRights.userStatus)
+            
+            return UserWithTokensResponse(tokens: tokens, user: userResponse)
+        }
+    }
+    
+    func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<[UserResponse01]> {
+        fatalError()
     }
     
     // MARK: Private functions

@@ -58,16 +58,16 @@ public func configure(_ app: Application) throws {
         app.logger.notice("Migration complete.")
     }
     
-//    // MARK: Check services
-//    // UsersService check
-//    let usersServiceEnvKey = ServicesRoutes.usersServiceEnvKey.description
-//    guard let usersService = Environment.process.usersServiceEnvKey else {
-//
-//        let error = "No value was found in environment for key: '\(usersServiceEnvKey))'"
-//        app.logger.critical("\(error)")
-//        throw Abort(HTTPStatus.internalServerError, reason: "\(error)")
-//    }
-//    AppValues.servicesRoutes[.usersServiceHomeRoute] = usersService
+    // MARK: Check services
+    // UsersService check
+    let checkServicesResult = try checkServiceAvailable(client: app.client).wait()
+    if checkServicesResult {
+        app.logger.notice("All microservices are ready to work together.")
+    } else {
+        app.logger.error("Not all microservices are ready to work together.")
+    }
+    
+    
 //
 //    // ModelsService check
 //    let modelsServiceEnvKey = ServicesRoutes.modelsServiceEnvKey.description
@@ -98,7 +98,6 @@ public func configure(_ app: Application) throws {
     }
 }
 
-
 fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: UserAccessRights, logger: Logger) -> EventLoopFuture<Bool> {
     
     return UserAccessRights.find(accessRights.id, on: db).flatMap {existingAccessRights in
@@ -122,23 +121,14 @@ fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: Us
     }
 }
 
-
-enum ServicesRoutes : Int, CaseIterable {
-    case usersServiceEnvKey
-    case modelsServiceEnvKey
-    case usersServiceHomeRoute
-    case modelsServiceHomeRoute
+fileprivate func checkServiceAvailable (client: Client)  -> EventLoopFuture<Bool> {
     
-    var description : String {
-        switch self {
-        case .usersServiceEnvKey:
-            return "SERVICE_USERS_URL"
-        case .modelsServiceEnvKey:
-            return "SERVICE_MODELS_URL"
-        case .usersServiceHomeRoute:
-            return ""
-        case .modelsServiceHomeRoute:
-            return ""
+    return client.get(
+        URI(string: USVarsAndRoutes.usersServiceHealthRoute.description)).flatMap {res in
+        if res.status == .ok {
+            return client.eventLoop.future(true)
+        } else {
+            return client.eventLoop.future(false)
         }
     }
 }

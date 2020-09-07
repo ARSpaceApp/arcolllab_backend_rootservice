@@ -5,8 +5,11 @@ import Foundation
 
 class AppValues {
     
-    static var servicesRoutes = [ServicesRoutes : String]()
-    
+    // Microservices
+    static var USHost   = "127.0.0.1"
+    static var USPort   = "8081"
+    static var USApiVer = "v1.1"
+
     // Tokens lifetime
     static let accessTokenLifeTime  : (component: Calendar.Component, value: Int) = (.hour, 4)
     static let refreshTokenLifeTime : (component: Calendar.Component, value: Int) = (.day, 7)

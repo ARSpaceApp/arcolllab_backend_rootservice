@@ -21,8 +21,8 @@ public struct Payload : JWTPayload {
 
     var userid: Int?
     var username: String?
-    var userRights: UserRights?
-    var userStatus: UserStatus?
+    var userRights: UserRights
+    var userStatus: UserStatus
 
     public func verify(using signer: JWTSigner) throws {
         try self.expiration.verifyNotExpired()
