@@ -12,12 +12,12 @@ final class UsersController {
         self.usersService = usersService
     }
     
-//    func jsonUserSignUp(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
-//        return try self.usersService.jsonUserSignUp (
-//            req: req,
-//            clientRoute: "\(API.usersRoute.description)/signup"
-//        )
-//    }
+    func jsonUserSignUp(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
+        return try self.usersService.jsonUserSignUp (
+            req: req,
+            clientRoute: USVarsAndRoutes.usersServiceSignUpRoute.description
+        )
+    }
     
     func jsonUserSignIn(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
         return try self.usersService.jsonUserSignIn (
@@ -49,17 +49,17 @@ extension UsersController : RouteCollection {
         
         let auth = users.grouped(JWTMiddleware())
         
-        //        // example: http://127.0.0.1:8080/v1.1/users/signup
-                //usersRoute001
-        //        users.post("signup", use: self.jsonUserSignUp)
+        // example: http://127.0.0.1:8080/v1.1/users/signup
+        // There are no requirements for restricting access to route.
+        users.post("signup", use: self.jsonUserSignUp)
         
         // example: http://127.0.0.1:8080/v1.1/users/signin
-        // usersRoute002
+        // There are no requirements for restricting access to route.
         users.post("signin", use: self.jsonUserSignIn)
 
         // example: http://127.0.0.1:8080/v1.1/users
-        let usersRoute003 = auth.get(use: self.jsonUsersGetAll)
-        usersRoute003.userInfo[.accessRight] =
+        let usersRoute001 = auth.get(use: self.jsonUsersGetAll)
+        usersRoute001.userInfo[.accessRight] =
             AccessRight(rights: [.superAdmin, .admin], statuses: [.confirmed])
 
         
@@ -156,6 +156,7 @@ enum USVarsAndRoutes : Int, CaseIterable {
     case usersServiceHealthRoute
     case usersServiceUsersRoute
     case usersServiceSignInRoute
+    case usersServiceSignUpRoute
     
     var description : String {
         switch self {
@@ -165,7 +166,8 @@ enum USVarsAndRoutes : Int, CaseIterable {
             return "http://\(AppValues.USHost):\(AppValues.USPort)/\(AppValues.USApiVer)/users"
         case .usersServiceSignInRoute:
             return "http://\(AppValues.USHost):\(AppValues.USPort)/\(AppValues.USApiVer)/users/signin"
-        
+        case .usersServiceSignUpRoute:
+            return "http://\(AppValues.USHost):\(AppValues.USPort)/\(AppValues.USApiVer)/users/signup"
         }
     }
 }

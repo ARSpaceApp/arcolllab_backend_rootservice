@@ -5,5 +5,6 @@ import Foundation
 
 enum ProjectServices {
     static let rootService: RootService = RootServiceImplementation()
+    static let regexService: RegexService = RegexServiceImplementation()
     static let userService: UsersService = UsersServiceImplementation()
 }
