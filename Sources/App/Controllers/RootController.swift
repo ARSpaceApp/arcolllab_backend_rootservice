@@ -18,11 +18,18 @@ final class RootController {
     }
     
     func jsonGetStatusCases (req: Request) -> EventLoopFuture<[UserStatus01]> {
-        fatalError()
+        return self.rootService.jsonGetStatusCases(req: req)
     }
     
     func jsonGetRightsCases (req: Request) -> EventLoopFuture<[UserRights01]> {
-        fatalError()
+        return self.rootService.jsonGetRightsCases(req: req)
+    }
+    
+    func jsonRefreshToken(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
+        return try self.rootService.jsonRefreshToken(
+            req: req,
+            clientRoute: "\(US_usVarsAndRoutes.usersServiceUsersRoute.description)"
+        )
     }
 }
 
@@ -32,20 +39,21 @@ extension RootController : RouteCollection {
         
         // example: http://127.0.0.1:8080/v1.1
         let root = routes.grouped(.anything)
+        let auth = root.grouped(JWTMiddleware())
         
-        let rootAuth = routes.grouped(JWTMiddleware())
-
         // example: http://127.0.0.1:8080/v1.1/health
         root.get("health", use: self.jsonHomeRequest)
         
         // example: http://127.0.0.1:8080/v1.1/statuses
         // Info route.
-        rootAuth.get("statuses", use: self.jsonGetStatusCases)
+        auth.get("statuses", use: self.jsonGetStatusCases)
         
         // example: http://127.0.0.1:8080/v1.1/rights
         // Info route.
-        rootAuth.get("rights", use: self.jsonGetRightsCases)
-
+        auth.get("rights", use: self.jsonGetRightsCases)
         
+        // example: http://127.0.0.1:8080/v1.1/refreshToken
+        // Info route.
+        root.post("refreshToken", use: self.jsonRefreshToken)
     }
 }

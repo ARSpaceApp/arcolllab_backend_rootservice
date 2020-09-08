@@ -2,6 +2,8 @@
 //  Created by Dmitry Samartcev on 05.09.2020.
 
 import Foundation
+import Vapor
+import SwiftHelperCode
 
 class AppValues {
     
@@ -16,5 +18,42 @@ class AppValues {
     
     // Other
     static let microserviceHealthMessage : String = "RootService work!"
+    
+    /// Creates a payload -> accessToken and refreshToken for user.
+    /// - Parameters:
+    ///   - req: Request.
+    ///   - userId: User id.
+    ///   - username: User name.
+    ///   - rights: User right.
+    ///   - status: User status.
+    /// - Throws: Function can throw errors.
+    /// - Returns: AccessToken and refreshToken for user as RefreshTokenResponse01.
+    static func makeUserTokens (req: Request, userId: Int, username: String, rights: UserRights01,  status: UserStatus01) throws -> RefreshTokenResponse01 {
+        // 1. Calculating lifetime for tokens.
+        let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
+        // 2. Generate payload.
+        let accessTokenPayload = UsersPayload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!), userid: userId, username: username, userRights: rights, userStatus: status)
+        // 3. Generate accessToken.
+        let accessToken = try req.application.jwt.signers.sign(accessTokenPayload)
+        // 4. Generate refreshTokenPayload.
+        let refreshTokenPayload = RefreshToken(userId: userId)
+        // 5. Generate refreshToken
+        let refreshToken = try req.application.jwt.signers.sign(refreshTokenPayload)
+        // 6. Return.
+        return RefreshTokenResponse01(accessToken: accessToken, refreshToken: refreshToken)
+    }
+    
+    /// Creates a payload -> accessToken for microservice.
+    /// - Parameter req: Request.
+    /// - Throws: Function can throw errors.
+    /// - Returns: AccessToken for microservice as String.
+    static func makeMicroservicesAccessToken(req: Request) throws -> String {
+        // 1. Calculating lifetime for token.
+        let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
+        // 2. Generate payload.
+        let accessTokenPayload = MicroservicesPayload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!))
+        // 3. Generate accessToken and return.
+        return try req.application.jwt.signers.sign(accessTokenPayload)
+    }
 }
 

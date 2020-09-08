@@ -30,7 +30,7 @@ final class UsersServiceImplementation : UsersService {
     
     func jsonUserSignUp(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse> {
   
-        let token = try makeMicroservicesAccessToken(req: req)
+        let token = try AppValues.makeMicroservicesAccessToken(req: req)
         let headers = HTTPHeaders([("Authorization", "Bearer \(token)")])
         
         return req.client.post(URI(string: clientRoute), headers: headers,  beforeSend: {clientRequest in
@@ -52,14 +52,14 @@ final class UsersServiceImplementation : UsersService {
                 }
             }
         }.flatMapThrowing {_, userResponse, userAccessRights -> EventLoopFuture<UserWithTokensResponse> in
-            let tokens = try self.makeUserTokens(req: req, userId: userResponse.id!, username: userResponse.username!, rights: userAccessRights.userRights, status: userAccessRights.userStatus)
+            let tokens = try AppValues.makeUserTokens(req: req, userId: userResponse.id!, username: userResponse.username!, rights: userAccessRights.userRights, status: userAccessRights.userStatus)
             return req.eventLoop.makeSucceededFuture(UserWithTokensResponse(tokens: tokens, user: userResponse))
         }.flatMap{$0}
     }
     
     func jsonUserSignIn(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse> {
         
-        let token = try makeMicroservicesAccessToken(req: req)
+        let token = try AppValues.makeMicroservicesAccessToken(req: req)
         let headers = HTTPHeaders([("Authorization", "Bearer \(token)")])
         
         return req.client.post(URI(string: clientRoute), headers: headers, beforeSend: { request in
@@ -80,10 +80,15 @@ final class UsersServiceImplementation : UsersService {
                 }
             }
         }.flatMap {userResponse in
-            
-            return UserAccessRights.find(userResponse.id!, on: req.db).flatMapThrowing {userAccessRights -> (UserResponse01, UserAccessRights) in
-                
-                guard let existingUserAccessRights = userAccessRights else {
+            return UserAccessRights.query(on: req.db)
+                .group(.and) { group in
+                    group
+                        .filter(\.$userId == userResponse.id!)
+                }
+                .first()
+                .flatMapThrowing {userAccessRights -> (UserResponse01, UserAccessRights) in
+                    
+                    guard let existingUserAccessRights = userAccessRights else {
                     throw Abort (.badRequest, reason: "There is no current status and access rights for user '\(userResponse.username!)'")
                 }
                 
@@ -96,7 +101,7 @@ final class UsersServiceImplementation : UsersService {
             
         }.flatMapThrowing {userResponse, userAccessRights in
             
-            let tokens = try self.makeUserTokens(req: req, userId: userResponse.id!, username: userResponse.username!, rights: userAccessRights.userRights, status: userAccessRights.userStatus)
+            let tokens = try AppValues.makeUserTokens(req: req, userId: userResponse.id!, username: userResponse.username!, rights: userAccessRights.userRights, status: userAccessRights.userStatus)
             
             return UserWithTokensResponse(tokens: tokens, user: userResponse)
         }
@@ -116,43 +121,6 @@ final class UsersServiceImplementation : UsersService {
         return req.client.get(URI(string: clientRoute), headers: req.headers).flatMap {res  in
             return req.eventLoop.future(res)
         }
-    }
-    
-    /// Creates a payload -> accessToken and refreshToken for user.
-    /// - Parameters:
-    ///   - req: Request.
-    ///   - userId: User id.
-    ///   - username: User name.
-    ///   - rights: User right.
-    ///   - status: User status.
-    /// - Throws: Function can throw errors.
-    /// - Returns: AccessToken and refreshToken for user as RefreshTokenResponse01.
-    private func makeUserTokens (req: Request, userId: Int, username: String, rights: UserRights01,  status: UserStatus01) throws -> RefreshTokenResponse01 {
-        // 1. Calculating lifetime for tokens.
-        let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
-        // 2. Generate payload.
-        let accessTokenPayload = UsersPayload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!), userid: userId, username: username, userRights: rights, userStatus: status)
-        // 3. Generate accessToken.
-        let accessToken = try req.application.jwt.signers.sign(accessTokenPayload)
-        // 4. Generate refreshTokenPayload.
-        let refreshTokenPayload = RefreshToken(userId: userId)
-        // 5. Generate refreshToken
-        let refreshToken = try req.application.jwt.signers.sign(refreshTokenPayload)
-        // 6. Return.
-        return RefreshTokenResponse01(accessToken: accessToken, refreshToken: refreshToken)
-    }
-    
-    /// Creates a payload -> accessToken for microservice.
-    /// - Parameter req: Request.
-    /// - Throws: Function can throw errors.
-    /// - Returns: AccessToken for microservice as String.
-    fileprivate func makeMicroservicesAccessToken(req: Request) throws -> String {
-        // 1. Calculating lifetime for token.
-        let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
-        // 2. Generate payload.
-        let accessTokenPayload = MicroservicesPayload(subject: "rootService", expiration: .init(value: accessTokenLifeTime!))
-        // 3. Generate accessToken and return.
-        return try req.application.jwt.signers.sign(accessTokenPayload)
     }
 
 }

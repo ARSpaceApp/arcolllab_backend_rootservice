@@ -100,25 +100,32 @@ public func configure(_ app: Application) throws {
 
 fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: UserAccessRights, logger: Logger) -> EventLoopFuture<Bool> {
     
-    return UserAccessRights.find(accessRights.id, on: db).flatMap {existingAccessRights in
-        
-        if let superAdminAccessRights = existingAccessRights {
-            superAdminAccessRights.userId = accessRights.userId
-            superAdminAccessRights.userRights = accessRights.userRights
-            superAdminAccessRights.userStatus = accessRights.userStatus
-            
-            return superAdminAccessRights.update(on: db).map { _ in
-                logger.notice("UserAccessRights for superadmin updated.")
-                return true
-            }
-            
-        } else {
-            return accessRights.save(on: db).map{ _ in
-                logger.notice("UserAccessRights for superadmin updated.")
-                return true
-            }
+    return UserAccessRights.query(on: db)
+        .group(.and) { group in
+            group
+                //.filter(\.$id == accessRights.id!)
+                .filter(\.$userId == accessRights.userId)
         }
+        .first()
+        .flatMap { existingAccessRights in
+            if let superAdminAccessRights = existingAccessRights {
+                superAdminAccessRights.userId = accessRights.userId
+                superAdminAccessRights.userRights = accessRights.userRights
+                superAdminAccessRights.userStatus = accessRights.userStatus
+                
+                return superAdminAccessRights.update(on: db).map { _ in
+                    logger.notice("UserAccessRights for superadmin updated.")
+                    return true
+                }
+                
+            } else {
+                return accessRights.save(on: db).map{ _ in
+                    logger.notice("UserAccessRights for superadmin updated.")
+                    return true
+                }
+            }
     }
+
 }
 
 fileprivate func checkServiceAvailable (client: Client)  -> EventLoopFuture<Bool> {
