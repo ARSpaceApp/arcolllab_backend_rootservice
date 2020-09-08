@@ -17,7 +17,9 @@ protocol UsersService {
     
     func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
     
-    func jsonUsersByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    func jsonGetUserByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
+    func jsonUpdateUserByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
 }
 
 final class UsersServiceImplementation : UsersService {
@@ -113,7 +115,7 @@ final class UsersServiceImplementation : UsersService {
         return simpleTransferGeRequest(req: req, clientRoute: clientRoute)
     }
     
-    func jsonUsersByParameter(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+    func jsonGetUserByParameter(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
 
         if let userParameter = req.parameters.get("userParameter") {
             
@@ -135,6 +137,34 @@ final class UsersServiceImplementation : UsersService {
             throw Abort (.badRequest, reason: "Request parameter is invalid.")
         }
     }
+    
+    func jsonUpdateUserByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+       
+        if let userParameter = req.parameters.get("userParameter") {
+            
+            if let userId = Int(userParameter.trimmingCharacters(in: .whitespacesAndNewlines))  {
+                _ =  try checkingAccessRightsForRequest(userId: userId, userName: nil, req: req)
+            } else  {
+                let userParameter =  userParameter.trimmingCharacters(in: .whitespacesAndNewlines)
+                _ = try checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req)
+            }
+            
+            return req.client.patch(URI(string: "\(clientRoute)/\(userParameter)"), headers: req.headers, beforeSend: {clientRequest in
+                
+                let input = try req.content.decode(UserUpdateInput01.self)
+                try clientRequest.content.encode(input)
+                
+            }).flatMapThrowing {res in
+                return res
+            }
+            
+            
+        } else {
+            throw Abort (.badRequest, reason: "Request parameter is invalid.")
+        }
+    }
+    
+    
     
     // MARK: Private functions
     /// Sends a GET-request to specified address "as is", copying headers of requested request.
