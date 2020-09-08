@@ -55,5 +55,21 @@ class AppValues {
         // 3. Generate accessToken and return.
         return try req.application.jwt.signers.sign(accessTokenPayload)
     }
+    
+    /// Retrieves a tuple of user data from request's accessToken payload.
+    /// - Parameter req: Request.
+    /// - Throws: An error where accessToken cannot be read.
+    /// - Returns: User data tuple.
+    static func getUserInfoFromAccessToken (req: Request) throws -> (userid: Int?, username: String?, userRights: UserRights01, userStatus: UserStatus01){
+        
+        if let accessToken = req.headers.bearerAuthorization?.token.utf8 {
+            let payload = try req.jwt.verify(Array(accessToken), as: UsersPayload.self)
+            return(payload.userid, payload.username, payload.userRights, payload.userStatus)
+            
+        } else {
+            throw Abort(.unauthorized, reason: "Missing required request component - accessToken.")
+        }
+    }
+
 }
 

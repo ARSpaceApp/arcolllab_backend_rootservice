@@ -40,12 +40,13 @@ final class UsersController {
         )
     }
     
-//    func jsonUserUpdate(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
-//        return try self.usersService.jsonUserSignUp (
-//            req: req,
-//            clientRoute: "\(API.usersRoute.description)/signup"
-//        )
-//    }
+    func jsonUsersByParameter (req: Request) throws -> EventLoopFuture<ClientResponse> {
+        return try self.usersService.jsonUsersByParameter (
+            req: req,
+            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+        )
+    }
+    
 }
 
 extension UsersController : RouteCollection {
@@ -69,9 +70,15 @@ extension UsersController : RouteCollection {
         users.post("signin", use: self.jsonUserSignIn)
 
         // example: http://127.0.0.1:8080/v1.1/users
-        let usersRoute001 = auth.get(use: self.jsonUsersGetAll)
-        usersRoute001.userInfo[.accessRight] =
+        let usersAuthRoute001 = auth.get(use: self.jsonUsersGetAll)
+        usersAuthRoute001.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin], statuses: [.confirmed])
+        
+        // example: http://127.0.0.1:8080/v1.1/users/:userParameter
+        let usersAuthRoute002 = auth.get(":userParameter", use: self.jsonUsersByParameter)
+        usersAuthRoute002.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
+       
     }
 
 }
