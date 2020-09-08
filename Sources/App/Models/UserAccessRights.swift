@@ -35,3 +35,23 @@ final class UserAccessRights :  Model, Content {
         self.userRights = userRights
     }
 }
+
+public struct UserAccessRightsInput01: Content {
+    public var userStatus: String?
+    public var userRights: String?
+}
+
+extension UserAccessRightsInput01 : Validatable {
+    public static func validations(_ validations: inout Validations) {
+        
+        validations.add("userStatus",
+                        as: String.self,
+                        is: .in(UserStatus01.created.rawValue, UserStatus01.confirmed.rawValue, UserStatus01.blocked.rawValue, UserStatus01.archived.rawValue),
+                        required: false)
+        
+        validations.add("userRights",
+                        as: String.self,
+                        is: .in(UserRights01.superadmin.rawValue, UserRights01.admin.rawValue, UserRights01.user.rawValue),
+                        required: false)
+    }
+}

@@ -20,6 +20,8 @@ protocol UsersService {
     func jsonGetUserByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
     
     func jsonUpdateUserByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
+    func jsonUpdateAccessRightsByUserId (req: Request) throws -> EventLoopFuture<HTTPResponseStatus>
 }
 
 final class UsersServiceImplementation : UsersService {
@@ -163,6 +165,58 @@ final class UsersServiceImplementation : UsersService {
             throw Abort (.badRequest, reason: "Request parameter is invalid.")
         }
     }
+    
+    func jsonUpdateAccessRightsByUserId (req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+        if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
+            
+            // Accepted, then the id of the superadmin in the database is 1.
+            // 1.0 Superadmin's data cannot be changed.
+            guard userId != 1 else {
+                throw Abort(HTTPStatus.forbidden, reason: "Superadmin's data cannot be changed.")
+            }
+            
+            // 2.0 Checking rights.
+            return try checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req).flatMapThrowing {result -> EventLoopFuture<HTTPResponseStatus> in
+                
+                // 3.0 Validating request body as UserAccessRightsInput01.
+                try UserAccessRightsInput01.validate(content: req)
+                
+                // 4.0 Decoding request body as UserAccessRightsInput01.
+                let userAccessRightsInput = try req.content.decode(UserAccessRightsInput01.self)
+                
+                return UserAccessRights.query(on: req.db).filter(\.$userId == userId).first().flatMap {rightsInDB in
+                    
+                    guard let rights = rightsInDB else {
+                        return req.eventLoop.makeFailedFuture(Abort(.internalServerError, reason: "No access rights found for requested user."))
+                    }
+                    
+                    guard userAccessRightsInput.userRights != nil || userAccessRightsInput.userStatus != nil else {
+                        return req.eventLoop.makeFailedFuture(Abort(.internalServerError, reason: "No data to update."))
+                    }
+                    
+                    // 5. Making changes.
+                    if userAccessRightsInput.userRights != nil,
+                       let newRights = UserRights01.allCases.first(where: {$0.rawValue == userAccessRightsInput.userRights!}){
+                        rights.userRights = newRights
+                    }
+                    
+                    if userAccessRightsInput.userStatus != nil,
+                       let newStatus = UserStatus01.allCases.first(where: {$0.rawValue == userAccessRightsInput.userStatus!}){
+                        rights.userStatus = newStatus
+                    }
+                    
+                    // 6. Response.
+                    return rights.update(on: req.db).transform(to: HTTPResponseStatus.ok)
+                }
+            }.flatMap{$0}
+
+        } else {
+            throw Abort (.badRequest, reason: "Request parameter is invalid.")
+        }
+    }
+    
+  
+    
     
     
     

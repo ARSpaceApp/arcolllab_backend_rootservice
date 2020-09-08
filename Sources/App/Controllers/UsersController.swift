@@ -54,6 +54,10 @@ final class UsersController {
         )
     }
     
+    func jsonUpdateAccessRightsByUserId (req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+        return try self.usersService.jsonUpdateAccessRightsByUserId (req: req)
+    }
+    
 }
 
 extension UsersController : RouteCollection {
@@ -91,11 +95,13 @@ extension UsersController : RouteCollection {
         usersAuthRoute003.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
         
-        // Отдельное оббновление для статуса и прав!!!!!!!
+        // example: http://127.0.0.1:8080/v1.1/users/:userParameter
+        let usersAuthRoute004 = auth.put(":userId", use: self.jsonUpdateAccessRightsByUserId)
+        usersAuthRoute004.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin, .admin], statuses: [.confirmed])
     }
 
 }
-
 
 enum US_usVarsAndRoutes : Int, CaseIterable {
     case usersServiceHealthRoute
