@@ -3,6 +3,7 @@
 
 import Vapor
 import Fluent
+import SwiftHelperCode
 
 extension FieldKey {
     // Keys for UserAccessRights
@@ -20,15 +21,15 @@ final class UserAccessRights :  Model, Content {
     
     @ID            (custom: FieldKey.rightsId, generatedBy: .database) var id:         Int?
     @Field         (key: FieldKey.userId)                              var userId:     Int
-    @Field         (key: FieldKey.userStatus)                          var userStatus: UserStatus
-    @Field         (key: FieldKey.userRights)                          var userRights: UserRights
+    @Field         (key: FieldKey.userStatus)                          var userStatus: UserStatus01
+    @Field         (key: FieldKey.userRights)                          var userRights: UserRights01
     @Timestamp     (key: FieldKey.rightsCreatedAt, on: .create)        var createdAt:  Date?
     @Timestamp     (key: FieldKey.rightsUpdateAt, on: .update)         var updatedAt:  Date?
     @Timestamp     (key: FieldKey.rightsDeleteAt, on: .delete)         var deleteAt:   Date?
     
     init () {}
     
-    init(id: Int? = nil, userId: Int, userStatus: UserStatus, userRights: UserRights) throws {
+    init(id: Int? = nil, userId: Int, userStatus: UserStatus01, userRights: UserRights01) throws {
         self.userId = userId
         self.userStatus = userStatus
         self.userRights = userRights

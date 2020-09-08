@@ -86,7 +86,7 @@ public func configure(_ app: Application) throws {
     
     // Store superAdmin userAccessRights.
     // By default, userId of superadmin is set to 1.
-    let superAdminUserAccessRights = try UserAccessRights(userId: 1, userStatus: .confirmed, userRights: .superAdmin)
+    let superAdminUserAccessRights = try UserAccessRights(userId: 1, userStatus: .confirmed, userRights: .superadmin)
     let saveResult = try storeSuperAdminUserAccessRights(db: app.db, accessRights: superAdminUserAccessRights, logger: app.logger).wait()
     
     if saveResult {
@@ -124,7 +124,7 @@ fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: Us
 fileprivate func checkServiceAvailable (client: Client)  -> EventLoopFuture<Bool> {
     
     return client.get(
-        URI(string: USVarsAndRoutes.usersServiceHealthRoute.description)).flatMap {res in
+        URI(string: US_usVarsAndRoutes.usersServiceHealthRoute.description)).flatMap {res in
         if res.status == .ok {
             return client.eventLoop.future(true)
         } else {

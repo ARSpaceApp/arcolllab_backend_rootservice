@@ -2,13 +2,14 @@
 //  Created by Dmitry Samartcev on 05.09.2020.
 
 import Foundation
+import SwiftHelperCode
 
 /// Sets access right to a specific route indicating allowed role and status on service.
 public class AccessRight : Hashable, Codable {
-    var rights   : [UserRights]?
-    var statuses : [UserStatus]?
+    var rights   : [UserRights01]?
+    var statuses : [UserStatus01]?
     
-    init (rights: [UserRights]?, statuses: [UserStatus]?) {
+    init (rights: [UserRights01]?, statuses: [UserStatus01]?) {
         self.rights = rights
         self.statuses = statuses
     }
@@ -37,6 +38,5 @@ public class AccessRight : Hashable, Codable {
         hasher.combine(rights)
         hasher.combine(statuses)
     }
-    
 }
  

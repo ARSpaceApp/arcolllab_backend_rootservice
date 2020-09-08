@@ -7,6 +7,10 @@ import SwiftHelperCode
 
 protocol UsersService {
 
+    func jsonGetStatusCases (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
+    func jsonGetGenderCases (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
     func jsonUserSignUp(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse>
     
     func jsonUserSignIn(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse>
@@ -15,7 +19,15 @@ protocol UsersService {
 }
 
 final class UsersServiceImplementation : UsersService {
- 
+    
+    func jsonGetStatusCases(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        return simpleTransferGeRequest(req: req, clientRoute: clientRoute)
+    }
+    
+    func jsonGetGenderCases(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        return simpleTransferGeRequest(req: req, clientRoute: clientRoute)
+    }
+    
     func jsonUserSignUp(req: Request, clientRoute: String) throws -> EventLoopFuture<UserWithTokensResponse> {
   
         let token = try makeMicroservicesAccessToken(req: req)
@@ -91,13 +103,21 @@ final class UsersServiceImplementation : UsersService {
     }
     
     func jsonUsersGetAll(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
-        
+        return simpleTransferGeRequest(req: req, clientRoute: clientRoute)
+    }
+    
+    // MARK: Private functions
+    /// Sends a GET-request to specified address "as is", copying headers of requested request.
+    /// - Parameters:
+    ///   - req: Request.
+    ///   - clientRoute: Route for request transmission.
+    /// - Returns: Returns client's response "as is" to requested party.
+    private func simpleTransferGeRequest (req: Request, clientRoute: String) -> EventLoopFuture<ClientResponse> {
         return req.client.get(URI(string: clientRoute), headers: req.headers).flatMap {res  in
             return req.eventLoop.future(res)
         }
     }
     
-    // MARK: Private functions
     /// Creates a payload -> accessToken and refreshToken for user.
     /// - Parameters:
     ///   - req: Request.
@@ -107,7 +127,7 @@ final class UsersServiceImplementation : UsersService {
     ///   - status: User status.
     /// - Throws: Function can throw errors.
     /// - Returns: AccessToken and refreshToken for user as RefreshTokenResponse01.
-    private func makeUserTokens (req: Request, userId: Int, username: String, rights: UserRights,  status: UserStatus) throws -> RefreshTokenResponse01 {
+    private func makeUserTokens (req: Request, userId: Int, username: String, rights: UserRights01,  status: UserStatus01) throws -> RefreshTokenResponse01 {
         // 1. Calculating lifetime for tokens.
         let accessTokenLifeTime = Date.createNewDate(originalDate: Date(), byAdding: AppValues.accessTokenLifeTime.component, number: AppValues.accessTokenLifeTime.value)
         // 2. Generate payload.

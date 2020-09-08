@@ -44,24 +44,25 @@ extension RegexController : RouteCollection {
         let regexes = routes.grouped(.anything, "regexes").grouped(JWTMiddleware())
         
         // example: http://127.0.0.1:8080/v1.1/regexes/cases
+        // Info Route
         let regexesRoute001 = regexes.get("cases", use: self.jsonGetAllCases)
         regexesRoute001.userInfo[.accessRight] =
-            AccessRight(rights: [.superAdmin, .admin, .user], statuses: [.confirmed])
+            AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
     
         // example: http://127.0.0.1:8080/v1.1/regexes
         let regexesRoute002 = regexes.post(use: self.jsonRegexStore)
         regexesRoute002.userInfo[.accessRight] =
-            AccessRight(rights: [.superAdmin], statuses: [.confirmed])
+            AccessRight(rights: [.superadmin], statuses: [.confirmed])
         
         // example: http://127.0.0.1:8080/v1.1/regexes
         let regexesRoute003 = regexes.get(use: self.jsonGetAllRegexes)
         regexesRoute003.userInfo[.accessRight] =
-            AccessRight(rights: [.superAdmin, .admin, .user], statuses: [.confirmed])
+            AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
         
         // example: http://127.0.0.1:8080/v1.1/regexes
         let regexesRoute004 = regexes.delete(use: self.jsonDeleteAllRegexes)
         regexesRoute004.userInfo[.accessRight] =
-            AccessRight(rights: [.superAdmin], statuses: [.confirmed])
+            AccessRight(rights: [.superadmin], statuses: [.confirmed])
     }
 }
 
