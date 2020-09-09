@@ -19,6 +19,7 @@ final class UsersController {
         )
     }
     
+    // ---
     func jsonUserSignUp(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
         return try self.usersService.jsonUserSignUp (
             req: req,
@@ -58,6 +59,35 @@ final class UsersController {
         return try self.usersService.jsonUpdateAccessRightsByUserId (req: req)
     }
     
+    // ---
+    func jsonStoreAvatarsByUserId(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        return try self.usersService.jsonStoreAvatarsByUserId(
+            req: req,
+            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+        )
+    }
+    
+    func jsonGetAllAvatarsByUserId(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        return try self.usersService.jsonGetAllAvatarsByUserId(
+            req: req,
+            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+        )
+    }
+    
+    func jsonDeletelAvatarsByUserIdAndAvatarId(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        return try self.usersService.jsonDeletelAvatarsByUserIdAndAvatarId(
+            req: req,
+            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+        )
+    }
+    
+    func jsonDeleteAllAvatars(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        return try self.usersService.jsonDeleteAllAvatars(
+            req: req,
+            clientRoute: US_usVarsAndRoutes.usersServiceAvatarsRoute.description
+        )
+    }
+    
 }
 
 extension UsersController : RouteCollection {
@@ -71,6 +101,8 @@ extension UsersController : RouteCollection {
         // example: http://127.0.0.1:8080/v1.1/users/genders
         // Info route.
         users.get("genders", use: self.jsonGetGenderCases)
+        
+        // ---
         
         // example: http://127.0.0.1:8080/v1.1/users/signup
         // There are no requirements for restricting access to route.
@@ -95,10 +127,35 @@ extension UsersController : RouteCollection {
         usersAuthRoute003.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
         
-        // example: http://127.0.0.1:8080/v1.1/users/:userParameter
+        // example: http://127.0.0.1:8080/v1.1/users/:userId
         let usersAuthRoute004 = auth.put(":userId", use: self.jsonUpdateAccessRightsByUserId)
         usersAuthRoute004.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin], statuses: [.confirmed])
+        
+        // ---
+        
+        // example: http://127.0.0.1:8080/v1.1/users/avatars/:userId
+        let usersAuthRoute005 = auth.post ("avatars",":userId", use: jsonStoreAvatarsByUserId)
+        usersAuthRoute005.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
+        
+        
+        // example: http://127.0.0.1:8080/v1.1/users/avatars/:userId
+        let usersAuthRoute006 = auth.get ("avatars",":userId", use: jsonGetAllAvatarsByUserId)
+        usersAuthRoute006.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
+        
+        
+        // example: http://127.0.0.1:8080/v1.1/users/avatars/:userId/:avatarId
+        let usersAuthRoute007 = auth.delete("avatars", ":userId", ":avatarId", use: jsonDeletelAvatarsByUserIdAndAvatarId)
+        usersAuthRoute007.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
+        
+       
+        // example: http://127.0.0.1:8080/v1.1/users/avatars
+        let usersAuthRoute008 = auth.delete ("avatars", use: jsonDeleteAllAvatars)
+        usersAuthRoute008.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin], statuses: [.confirmed])
     }
 
 }
@@ -109,6 +166,7 @@ enum US_usVarsAndRoutes : Int, CaseIterable {
     case usersServiceUsersRoute
     case usersServiceSignInRoute
     case usersServiceSignUpRoute
+    case usersServiceAvatarsRoute
     
     var description : String {
         switch self {
@@ -122,103 +180,8 @@ enum US_usVarsAndRoutes : Int, CaseIterable {
             return "http://\(AppValues.USHost):\(AppValues.USPort)/\(AppValues.USApiVer)/users/signup"
         case .usersServiceGenderCasesRoute:
             return "http://\(AppValues.USHost):\(AppValues.USPort)/\(AppValues.USApiVer)/users/genders"
+        case .usersServiceAvatarsRoute:
+            return "http://\(AppValues.USHost):\(AppValues.USPort)/\(AppValues.USApiVer)/users/avatars"
         }
     }
 }
-
-
-//                        // 9.6 If the user's status is passed.
-//                        if let statusString = userUpdateInput.status, statusString != "" {
-//                            do {
-//                                let modifyingUserIsAnAdmin = try UserRights.userIsAnAdmin(roleID: Int64(modifyingUserId))
-//
-//                                // 9.6.1. If user being modified is a supermin, no changes can be made.
-//                                if modifiedUser.userRights == .superAdmin {
-//                                    throw Abort(.badRequest, reason: USErrorHelper.UsersError.cantChangeRightsOrStatusOfSuperadmin.localizedDescription)
-//                                }
-//
-//                                // 9.6.2.1 Modifying user belongs to 'admins' group.
-//                                if modifyingUserIsAnAdmin {
-//                                    // 9.6.2.1.1 If modifying and modified user is one person.
-//                                    if modifyingUserId == modifiedUser.id {
-//                                        // 9.6.2.1.1.1 Если статус меняется на 'archived' (профиль удаляется (архивируется))
-//                                        if statusString == Status.archived.rawValue {
-//                                            if let newStatus = Status.allCases.first(where: {$0.rawValue == statusString}) {
-//                                                modifiedUser.status = newStatus
-//                                            }
-//                                        // Error - direct self-hosted change of your own important data is prohibited.
-//                                        } else {
-//                                            throw Abort(HTTPResponseStatus.forbidden, reason: USErrorHelper.UsersError.cantChangeOwnSignificantData(key: "user status").localizedDescription)
-//                                        }
-//                                    // 9.6.2.1.2 If modifying user and modified user they are different people.
-//                                    } else {
-//                                        if let newStatus = Status.allCases.first(where: {$0.rawValue == statusString}) {
-//                                            modifiedUser.status = newStatus
-//                                        }
-//                                    }
-//
-//
-//                                // 9.6.2.2 Modifying user is not a member of 'admins' group.
-//                                } else {
-//                                    // 9.6.2.2.1 If modifying and modified user is one person.
-//                                    if modifyingUserId == modifiedUser.id {
-//                                        // 9.6.2.2.1.1 Если статус меняется на 'archived' (профиль удаляется (архивируется))
-//                                        if statusString == Status.archived.rawValue {
-//                                            if let newStatus = Status.allCases.first(where: {$0.rawValue == statusString}) {
-//                                                modifiedUser.status = newStatus
-//                                            }
-//                                        // Error - direct self-hosted change of your own important data is prohibited.
-//                                        } else {
-//                                            throw Abort(
-//                                                HTTPResponseStatus.forbidden,
-//                                                reason: USErrorHelper.UsersError.cantChangeOwnSignificantData(key: "user status").localizedDescription)
-//                                        }
-//                                    // 9.6.2.2.2 If modifying user and modified user they are different people.
-//                                    } else {
-//                                        // Error - only administrators or owner of profile can change this data.
-//                                        throw Abort(HTTPResponseStatus.forbidden, reason: USErrorHelper.UsersError.accessErrorToMakeChange.localizedDescription)
-//                                    }
-//                                }
-//                            } catch {
-//                                throw error
-//                            }
-//                        }
-//
-//                        // 9.7 If the user's role is passed
-//                        if let userRightsInt = userUpdateInput.rights {
-//
-//                            do {
-//                                let modifyingUserIsAnAdmin = try UserRights.userIsAnAdmin(roleID: Int64(modifyingUserId))
-//
-//                                // 9.7.1. If user being modified is a supermin, no changes can be made.
-//                                if modifiedUser.userRights == .superAdmin {
-//                                    throw Abort(.badRequest, reason: USErrorHelper.UsersError.cantChangeRightsOrStatusOfSuperadmin.localizedDescription)
-//                                }
-//
-//                                // 9.7.2.1 Modifying user belongs to 'admins' group.
-//                                if modifyingUserIsAnAdmin {
-//                                    // 9.7.2.1.1 If modifying and modified user is one person.
-//                                    if modifyingUserId == modifiedUser.id {
-//                                        // Error - direct self-hosted change of your own important data is prohibited.
-//                                        throw Abort(
-//                                            HTTPResponseStatus.forbidden,
-//                                            reason: USErrorHelper.UsersError.cantChangeOwnSignificantData(key: "user rights").localizedDescription)
-//                                    // 9.7.2.1.2 If modifying user and modified user they are different people.
-//                                    } else {
-//                                        modifiedUser.userRights = try UserRights.getUserRightsBy(roleID: userRightsInt)
-//                                    }
-//
-//                                // 9.7.2.2 Modifying user is not a member of 'admins' group.
-//                                } else {
-//                                    // Error - only administrators can change this data.
-//                                    throw Abort(
-//                                        HTTPResponseStatus.forbidden,
-//                                        reason: USErrorHelper.UsersError.cantChangeOwnSignificantData(key: "user rigts").localizedDescription)
-//                                }
-//                            } catch {
-//                                throw error
-//                            }
-//
-//                        }
-
-

@@ -22,6 +22,14 @@ protocol UsersService {
     func jsonUpdateUserByParameter (req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
     
     func jsonUpdateAccessRightsByUserId (req: Request) throws -> EventLoopFuture<HTTPResponseStatus>
+    
+    func jsonStoreAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
+    func jsonGetAllAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
+    func jsonDeletelAvatarsByUserIdAndAvatarId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    
+    func jsonDeleteAllAvatars(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
 }
 
 final class UsersServiceImplementation : UsersService {
@@ -156,9 +164,7 @@ final class UsersServiceImplementation : UsersService {
                 let input = try req.content.decode(UserUpdateInput01.self)
                 try clientRequest.content.encode(input)
                 
-            }).flatMapThrowing {res in
-                return res
-            }
+            }).flatMapThrowing {$0}
             
             
         } else {
@@ -215,10 +221,74 @@ final class UsersServiceImplementation : UsersService {
         }
     }
     
-  
+    func jsonStoreAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        
+        if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
+            
+            return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMapThrowing { _ -> EventLoopFuture<ClientResponse> in
+                
+                let string = "\(clientRoute)/\(userId)/avatar"
+                
+                return req.client.post(URI(string: string), headers: req.headers, beforeSend: {clientRequest in
+                    let avatarInput = try req.content.decode(AvatarInput01.self)
+                    try clientRequest.content.encode(avatarInput)
+                }).flatMapThrowing{$0}
+            }.flatMap{$0}
+        } else {
+            throw Abort (.badRequest, reason: "Request parameter is invalid.")
+        }
+    }
     
+    func jsonGetAllAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        
+        if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
+            
+            // 1.0 Initial check of the requestor's access rights
+            return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
+                
+                
+                
+                ///users/:userParameter/avatar
+                fatalError()
+            }
+            
+        } else {
+            throw Abort (.badRequest, reason: "Request parameter is invalid.")
+        }
+    }
     
+    func jsonDeletelAvatarsByUserIdAndAvatarId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        
+        if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
+            if let avatarParameter = req.parameters.get("avatarId"), let avatarId = Int(avatarParameter) {
+                
+                // 1.0 Initial check of the requestor's access rights
+                return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
+                    
+                    
+                    
+                    ///users/:userParameter/avatar/:avatarId
+                    fatalError()
+                }
+                
+            } else {
+                throw Abort (.badRequest, reason: "Request parameter is invalid.")
+            }
+        } else {
+            throw Abort (.badRequest, reason: "Request parameter is invalid.")
+        }
+        
+        
+        
     
+    }
+    
+    func jsonDeleteAllAvatars(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        
+        ///users/avatars
+        fatalError()
+        
+    }
     
     // MARK: Private functions
     /// Sends a GET-request to specified address "as is", copying headers of requested request.
@@ -233,7 +303,7 @@ final class UsersServiceImplementation : UsersService {
     }
     
     /// Recognizes requestor by data of their access token, checks it in DB for relevance of status (cannot be 'blocked' or 'deleted'), based on verification of rights (superadmin, admin or ordinary user) decides on further possibility of performing actions.
-    /// This check is used for such routes where a requestor as an unblocked/unarchived superadmin/admin can perform actions on resources of any other user, and a requestor in rights of a regular user can only perform actions on his own resources (An example of such routes is a get, update, delete user profile by username or id).
+    /// - This check is used for such routes where a requestor as an unblocked/unarchived superadmin/admin can perform actions on resources of any other user, and a requestor in rights of a regular user can only perform actions on his own resources (An example of such routes is a get, update, delete user profile by username or id).
     /// - Parameters:
     ///   - req: Request.
     ///   - userId: User ID from request (optional).
@@ -291,5 +361,4 @@ final class UsersServiceImplementation : UsersService {
                 return req.eventLoop.makeSucceededFuture(true)
             }
     }
-
 }
