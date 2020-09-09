@@ -15,7 +15,7 @@ final class UsersController {
     func jsonGetGenderCases (req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonGetGenderCases (
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceGenderCasesRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceGenderCasesRoute.description
         )
     }
     
@@ -23,35 +23,35 @@ final class UsersController {
     func jsonUserSignUp(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
         return try self.usersService.jsonUserSignUp (
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceSignUpRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceSignUpRoute.description
         )
     }
     
     func jsonUserSignIn(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
         return try self.usersService.jsonUserSignIn (
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceSignInRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceSignInRoute.description
         )
     }
      
     func jsonUsersGetAll(req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonUsersGetAll (
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceUsersRoute.description
         )
     }
     
     func jsonGetUserByParameter (req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonGetUserByParameter (
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceUsersRoute.description
         )
     }
     
     func jsonUpdateUserByParameter (req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonUpdateUserByParameter (
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceUsersRoute.description
         )
     }
     
@@ -63,28 +63,28 @@ final class UsersController {
     func jsonStoreAvatarsByUserId(req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonStoreAvatarsByUserId(
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceUsersRoute.description
         )
     }
     
     func jsonGetAllAvatarsByUserId(req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonGetAllAvatarsByUserId(
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceUsersRoute.description
         )
     }
     
-    func jsonDeletelAvatarsByUserIdAndAvatarId(req: Request) throws -> EventLoopFuture<ClientResponse> {
-        return try self.usersService.jsonDeletelAvatarsByUserIdAndAvatarId(
+    func jsonDeletelAvatarByUserIdAndAvatarId(req: Request) throws -> EventLoopFuture<ClientResponse> {
+        return try self.usersService.jsonDeletelAvatarByUserIdAndAvatarId(
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceUsersRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceUsersRoute.description
         )
     }
     
     func jsonDeleteAllAvatars(req: Request) throws -> EventLoopFuture<ClientResponse> {
         return try self.usersService.jsonDeleteAllAvatars(
             req: req,
-            clientRoute: US_usVarsAndRoutes.usersServiceAvatarsRoute.description
+            clientRoute: US_USVarsAndRoutes.usersServiceAvatarsRoute.description
         )
     }
     
@@ -133,9 +133,8 @@ extension UsersController : RouteCollection {
             AccessRight(rights: [.superadmin, .admin], statuses: [.confirmed])
         
         // ---
-        
         // example: http://127.0.0.1:8080/v1.1/users/avatars/:userId
-        let usersAuthRoute005 = auth.post ("avatars",":userId", use: jsonStoreAvatarsByUserId)
+        let usersAuthRoute005 =  auth.on(.POST, "avatars", ":userId", body: .collect(maxSize: "5mb"),  use: jsonStoreAvatarsByUserId)
         usersAuthRoute005.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
         
@@ -147,7 +146,7 @@ extension UsersController : RouteCollection {
         
         
         // example: http://127.0.0.1:8080/v1.1/users/avatars/:userId/:avatarId
-        let usersAuthRoute007 = auth.delete("avatars", ":userId", ":avatarId", use: jsonDeletelAvatarsByUserIdAndAvatarId)
+        let usersAuthRoute007 = auth.delete("avatars", ":userId", ":avatarId", use: jsonDeletelAvatarByUserIdAndAvatarId)
         usersAuthRoute007.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
         
@@ -160,7 +159,7 @@ extension UsersController : RouteCollection {
 
 }
 
-enum US_usVarsAndRoutes : Int, CaseIterable {
+enum US_USVarsAndRoutes : Int, CaseIterable {
     case usersServiceHealthRoute
     case usersServiceGenderCasesRoute
     case usersServiceUsersRoute

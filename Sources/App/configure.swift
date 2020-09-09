@@ -131,7 +131,7 @@ fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: Us
 fileprivate func checkServiceAvailable (client: Client)  -> EventLoopFuture<Bool> {
     
     return client.get(
-        URI(string: US_usVarsAndRoutes.usersServiceHealthRoute.description)).flatMap {res in
+        URI(string: US_USVarsAndRoutes.usersServiceHealthRoute.description)).flatMap {res in
         if res.status == .ok {
             return client.eventLoop.future(true)
         } else {

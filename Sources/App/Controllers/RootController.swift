@@ -28,7 +28,7 @@ final class RootController {
     func jsonRefreshToken(req: Request) throws -> EventLoopFuture<UserWithTokensResponse> {
         return try self.rootService.jsonRefreshToken(
             req: req,
-            clientRoute: "\(US_usVarsAndRoutes.usersServiceUsersRoute.description)"
+            clientRoute: "\(US_USVarsAndRoutes.usersServiceUsersRoute.description)"
         )
     }
 }

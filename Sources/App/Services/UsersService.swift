@@ -27,7 +27,7 @@ protocol UsersService {
     
     func jsonGetAllAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
     
-    func jsonDeletelAvatarsByUserIdAndAvatarId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    func jsonDeletelAvatarByUserIdAndAvatarId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
     
     func jsonDeleteAllAvatars(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
 }
@@ -242,52 +242,33 @@ final class UsersServiceImplementation : UsersService {
     func jsonGetAllAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
         
         if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
-            
-            // 1.0 Initial check of the requestor's access rights
             return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
-                
-                
-                
-                ///users/:userParameter/avatar
-                fatalError()
+                let string = "\(clientRoute)/\(userId)/avatar"
+                return req.client.get(URI(string: string), headers: req.headers).flatMapThrowing {$0}
             }
-            
         } else {
             throw Abort (.badRequest, reason: "Request parameter is invalid.")
         }
     }
     
-    func jsonDeletelAvatarsByUserIdAndAvatarId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+    func jsonDeletelAvatarByUserIdAndAvatarId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
         
         if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
             if let avatarParameter = req.parameters.get("avatarId"), let avatarId = Int(avatarParameter) {
-                
-                // 1.0 Initial check of the requestor's access rights
                 return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
-                    
-                    
-                    
-                    ///users/:userParameter/avatar/:avatarId
-                    fatalError()
+                    let string = "\(clientRoute)/\(userId)/avatar/\(avatarId)"
+                    return req.client.delete(URI(string: string), headers: req.headers).flatMapThrowing {$0}
                 }
-                
             } else {
                 throw Abort (.badRequest, reason: "Request parameter is invalid.")
             }
         } else {
             throw Abort (.badRequest, reason: "Request parameter is invalid.")
         }
-        
-        
-        
-    
     }
     
     func jsonDeleteAllAvatars(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
-        
-        ///users/avatars
-        fatalError()
-        
+        return req.client.delete(URI(string: clientRoute), headers: req.headers).flatMapThrowing{$0}
     }
     
     // MARK: Private functions
