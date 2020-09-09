@@ -6,13 +6,18 @@ import SwiftHelperCode
 
 extension UserStatus01 : Content {}
 
+extension UserStatus01 {
+    var description : String {
+        switch self {
 
-//        validations.add("status", as: String.self,
-//                        is: .empty || (!.empty && .in(Status.created.rawValue, Status.confirmed.rawValue, Status.blocked.rawValue, Status.archived.rawValue)),
-//                        required: false
-//        )
-//
-//        validations.add("userRights", as: Int64.self,
-//                        is: .range(_: UserRights.groupRange()),
-//                        required: false
-//        )
+        case .created:
+            return "created"
+        case .confirmed:
+            return "confirmed"
+        case .blocked:
+            return "blocked"
+        case .archived:
+            return "archived"
+        }
+    }
+}

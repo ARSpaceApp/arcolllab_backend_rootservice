@@ -5,3 +5,16 @@ import Vapor
 import SwiftHelperCode
 
 extension UserRights01 : Content {}
+
+extension UserRights01 {
+    var description : String {
+        switch self {
+        case .user:
+            return "user"
+        case .admin:
+            return "admin"
+        case .superadmin:
+            return "superadmin"
+        }
+    }
+}

@@ -47,27 +47,26 @@ public final class JWTMiddleware: Middleware {
          // 2. Getting access rules from userInfo of passed route.
          // 2.1 If access rights are present in passed route.
         if let routeAccessRight = req.route?.userInfo[.accessRight] as? AccessRight {
-             // 3. If route contains access rights by status:
-             if let routeAccessRightStatuses = routeAccessRight.statuses {
-                 // 3.1 If access rights of route by status and user status do not match:
-                 if !routeAccessRightStatuses.contains(payload.userStatus) {
-                     var allowedStatuses = ""
-                     routeAccessRightStatuses.forEach {allowedStatuses.append("'\($0)'")}
-                     // 3.3 Access error by status with indication of allowed statuses.
-                     throw Abort(HTTPStatus.forbidden, reason: "This request supports statuses: \(allowedStatuses).")
-                 }
-             }
+            // 3. If route contains access rights by status:
+            if let routeAccessRightStatuses = routeAccessRight.statuses {
+                // 3.1 If access rights of route by status and user status do not match:
+                if !routeAccessRightStatuses.contains(payload.userStatus) {
+                    var allowedStatuses = ""
+                    routeAccessRightStatuses.forEach {allowedStatuses.append("'\($0.description)' ")}
+                    // 3.3 Access error by status with indication of allowed statuses.
+                    throw Abort(HTTPStatus.forbidden, reason: "This request supports statuses: \(allowedStatuses).")
+                }
+            }
              // 4. If route contains access rights by role:
              if let routeAccessRightRoles = routeAccessRight.rights {
                  // 4.1 If access rights of route by role and user role do not match:
                 if !routeAccessRightRoles.contains(payload.userRights) {
                     var allowedRights = ""
-                    routeAccessRightRoles.forEach {allowedRights.append("'\($0)'")}
+                    routeAccessRightRoles.forEach {allowedRights.append("'\($0.description)' ")}
                     // 4.3 Access error by role with indication of allowed roles.
-                    throw Abort(HTTPStatus.forbidden, reason: "This request supports roles: \(routeAccessRightRoles).")
+                    throw Abort(HTTPStatus.forbidden, reason: "This request supports roles: \(allowedRights).")
                 }
              }
          }
-
      }
 }

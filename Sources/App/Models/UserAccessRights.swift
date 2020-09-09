@@ -46,12 +46,12 @@ extension UserAccessRightsInput01 : Validatable {
         
         validations.add("userStatus",
                         as: String.self,
-                        is: .in(UserStatus01.created.rawValue, UserStatus01.confirmed.rawValue, UserStatus01.blocked.rawValue, UserStatus01.archived.rawValue),
+                        is: .empty || (!.empty && .in(UserStatus01.created.rawValue, UserStatus01.confirmed.rawValue, UserStatus01.blocked.rawValue, UserStatus01.archived.rawValue)),
                         required: false)
         
         validations.add("userRights",
                         as: String.self,
-                        is: .in(UserRights01.superadmin.rawValue, UserRights01.admin.rawValue, UserRights01.user.rawValue),
+                        is: .empty || (!.empty && .in(UserRights01.superadmin.rawValue, UserRights01.admin.rawValue, UserRights01.user.rawValue)),
                         required: false)
     }
 }
