@@ -11,4 +11,7 @@ func routes(_ app: Application) throws {
     
     let usersController = UsersController(usersService: ProjectServices.userService)
     try app.register(collection: usersController)
+    
+    let modelsController = ModelsController(modelsService: ProjectServices.modelsService)
+    try app.register(collection: modelsController)
 }

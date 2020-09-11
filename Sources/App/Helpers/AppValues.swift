@@ -11,6 +11,10 @@ class AppValues {
     static var USHost   = "127.0.0.1"
     static var USPort   = "8081"
     static var USApiVer = "v1.1"
+    
+    static var MSHost   = "127.0.0.1"
+    static var MSPort   = "8082"
+    static var MSApiVer = "v1.1"
 
     // Tokens lifetime
     static let accessTokenLifeTime  : (component: Calendar.Component, value: Int) = (.hour, 4)
