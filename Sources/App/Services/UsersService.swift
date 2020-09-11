@@ -130,14 +130,14 @@ final class UsersServiceImplementation : UsersService {
         if let userParameter = req.parameters.get("userParameter") {
             
             if let userId = Int(userParameter.trimmingCharacters(in: .whitespacesAndNewlines))  {
-                return try checkingAccessRightsForRequest(userId: userId, userName: nil, req: req).flatMapThrowing {result in
+                return try AppValues.checkingAccessRightsForRequest(userId: userId, userName: nil, req: req).flatMapThrowing {result in
                     return req.client.get(URI(string: "\(clientRoute)/\(userId)"), headers: req.headers).flatMapThrowing {res in
                         return res
                     }
                 }.flatMap{$0}
             } else  {
                 let userParameter =  userParameter.trimmingCharacters(in: .whitespacesAndNewlines)
-                return try checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req).flatMapThrowing {result in
+                return try AppValues.checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req).flatMapThrowing {result in
                     return req.client.get(URI(string: "\(clientRoute)/\(userParameter)"), headers: req.headers).flatMapThrowing {res in
                         return res
                     }
@@ -153,10 +153,10 @@ final class UsersServiceImplementation : UsersService {
         if let userParameter = req.parameters.get("userParameter") {
             
             if let userId = Int(userParameter.trimmingCharacters(in: .whitespacesAndNewlines))  {
-                _ =  try checkingAccessRightsForRequest(userId: userId, userName: nil, req: req)
+                _ =  try AppValues.checkingAccessRightsForRequest(userId: userId, userName: nil, req: req)
             } else  {
                 let userParameter =  userParameter.trimmingCharacters(in: .whitespacesAndNewlines)
-                _ = try checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req)
+                _ = try AppValues.checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req)
             }
             
             return req.client.patch(URI(string: "\(clientRoute)/\(userParameter)"), headers: req.headers, beforeSend: {clientRequest in
@@ -182,7 +182,7 @@ final class UsersServiceImplementation : UsersService {
             }
             
             // 2.0 Checking rights.
-            return try checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req).flatMapThrowing {result -> EventLoopFuture<HTTPResponseStatus> in
+            return try AppValues.checkingAccessRightsForRequest(userId: nil, userName: userParameter, req: req).flatMapThrowing {result -> EventLoopFuture<HTTPResponseStatus> in
                 
                 // 3.0 Validating request body as UserAccessRightsInput01.
                 try UserAccessRightsInput01.validate(content: req)
@@ -225,7 +225,7 @@ final class UsersServiceImplementation : UsersService {
         
         if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
             
-            return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMapThrowing { _ -> EventLoopFuture<ClientResponse> in
+            return try AppValues.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMapThrowing { _ -> EventLoopFuture<ClientResponse> in
                 
                 let string = "\(clientRoute)/\(userId)/avatar"
                 
@@ -242,7 +242,7 @@ final class UsersServiceImplementation : UsersService {
     func jsonGetAllAvatarsByUserId(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
         
         if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
-            return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
+            return try AppValues.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
                 let string = "\(clientRoute)/\(userId)/avatar"
                 return req.client.get(URI(string: string), headers: req.headers).flatMapThrowing {$0}
             }
@@ -255,7 +255,7 @@ final class UsersServiceImplementation : UsersService {
         
         if let userParameter = req.parameters.get("userId"), let userId = Int(userParameter) {
             if let avatarParameter = req.parameters.get("avatarId"), let avatarId = Int(avatarParameter) {
-                return try self.checkingAccessRightsForRequest(userId: userId , userName: nil, req: req).flatMap { _ in
+                return try AppValues.checkingAccessRightsForRequest(userId: userId, userName: nil, req: req).flatMap { _ in
                     let string = "\(clientRoute)/\(userId)/avatar/\(avatarId)"
                     return req.client.delete(URI(string: string), headers: req.headers).flatMapThrowing {$0}
                 }
@@ -282,64 +282,5 @@ final class UsersServiceImplementation : UsersService {
             return req.eventLoop.future(res)
         }
     }
-    
-    /// Recognizes requestor by data of their access token, checks it in DB for relevance of status (cannot be 'blocked' or 'deleted'), based on verification of rights (superadmin, admin or ordinary user) decides on further possibility of performing actions.
-    /// - This check is used for such routes where a requestor as an unblocked/unarchived superadmin/admin can perform actions on resources of any other user, and a requestor in rights of a regular user can only perform actions on his own resources (An example of such routes is a get, update, delete user profile by username or id).
-    /// - Parameters:
-    ///   - req: Request.
-    ///   - userId: User ID from request (optional).
-    ///   - userName: Username from request (optional).
-    /// - Throws: Function can throw errors.
-    /// - Returns: Boolean flag of validation performed.
-    private func checkingAccessRightsForRequest (userId: Int?, userName: String?, req: Request) throws -> EventLoopFuture<Bool> {
-       
-        // 1. Getting information about requestor from token.
-        let valuesFromToken = try AppValues.getUserInfoFromAccessToken(req: req)
-        
-        guard let requestorId = valuesFromToken.userid, let requestorUsername = valuesFromToken.username else {
-            throw Abort(.badRequest, reason: "Access token of requestor does not contain user's identifier")
-        }
-        
-        // 2. Getting status and access rights of requestor.
-        return UserAccessRights
-            .query(on: req.db)
-            .filter(\.$userId == requestorId)
-            .first()
-            .unwrap(or: Abort(.notFound, reason: "DB does not contain status and access rights of requestor."))
-            .flatMapThrowing { requestorAccessRights -> Bool  in
-                
-                // 3. Check - status of requestor cannot be "blocked" or "archived".
-                guard requestorAccessRights.userStatus != .blocked, requestorAccessRights.userStatus != .archived else {
-                    throw Abort (HTTPStatus.forbidden, reason: "Status of user is blocked or deleted. Contact administration of service on issue of restoring access.")
-                }
-                
-                // 4. If requestor is superadmin or admin - further actions are allowed.
-                if requestorAccessRights.userRights == .admin || requestorAccessRights.userRights == .superadmin {
-                    return true
-                    
-                // 4.1 If requestor is user - only profile owner can access this resource.
-                } else {
-                        // 4.1.1 If userId is recognized.
-                        if let userId = userId, userName == nil {
-                            if userId == requestorId {
-                                return true
-                            } else {
-                                throw Abort (HTTPStatus.forbidden, reason: "Only profile owner can access this resource.")
-                            }
-                        // 4.1.2 If username is recognized.
-                        } else if let userName = userName, userId == nil {
-                            if userName == requestorUsername {
-                                return true
-                            } else {
-                                throw Abort (HTTPStatus.forbidden, reason: "Only profile owner can access this resource.")
-                            }
-                        // 4.1.3 If nothing is recognized.
-                        } else {
-                            throw Abort (.badRequest, reason: "Request parameter is invalid.")
-                        }
-                }
-            }.flatMap{flag in
-                return req.eventLoop.makeSucceededFuture(true)
-            }
-    }
+
 }

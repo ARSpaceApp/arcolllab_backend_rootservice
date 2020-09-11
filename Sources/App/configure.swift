@@ -6,7 +6,7 @@ import JWT
 public func configure(_ app: Application) throws {
     
     // MARK: ServerConfig
-    app.http.server.configuration.port = 8080
+    app.http.server.configuration.port = 8801
     
     // MARK: Middlewares
     app.middleware.use(CORSMiddleware())
@@ -60,27 +60,12 @@ public func configure(_ app: Application) throws {
     
     // MARK: Check services
     // UsersService check
-    let checkServicesResult = try checkServiceAvailable(client: app.client).wait()
+    let checkServicesResult = try checkServiceAvailable(client: app.client, logger: app.logger).wait()
     if checkServicesResult {
         app.logger.notice("All microservices are ready to work together.")
     } else {
         app.logger.error("Not all microservices are ready to work together.")
     }
-    
-    
-//
-//    // ModelsService check
-//    let modelsServiceEnvKey = ServicesRoutes.modelsServiceEnvKey.description
-//    guard let modelsService = Environment.process.modelsServiceEnvKey else {
-//
-//        let error = "No value was found in environment for key: '\(modelsServiceEnvKey))'"
-//        app.logger.critical("\(error)")
-//        throw Abort(HTTPStatus.internalServerError, reason: "\(error)")
-//    }
-//    AppValues.servicesRoutes[.modelsServiceHomeRoute] = modelsService
-//
-//    // TODO: Подклються на home роуты и проверить на 200
-//    // ...
 
     // MARK: Routes
     
@@ -128,14 +113,29 @@ fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: Us
 
 }
 
-fileprivate func checkServiceAvailable (client: Client)  -> EventLoopFuture<Bool> {
+fileprivate func checkServiceAvailable (client: Client, logger: Logger)  -> EventLoopFuture<Bool> {
     
-    return client.get(
-        URI(string: US_USVarsAndRoutes.usersServiceHealthRoute.description)).flatMap {res in
-        if res.status == .ok {
-            return client.eventLoop.future(true)
-        } else {
-            return client.eventLoop.future(false)
-        }
+    let promise01 = client.eventLoop.makePromise(of: EventLoopFuture<ClientResponse>.self)
+    promise01.succeed(client.get(URI(string: US_USVarsAndRoutes.usersServiceHealthRoute.description)))
+    return promise01.futureResult.flatMap {clientResponse01 in
+        return clientResponse01.map {response in
+            if response.status == .ok {
+                let promise02 = client.eventLoop.makePromise(of: EventLoopFuture<ClientResponse>.self)
+                promise02.succeed(client.get(URI(string: US_MSVarsAndRoutes.modelsServiceHealthRoot.description)))
+                return promise02.futureResult.flatMap {clientResponse02  in
+                    return clientResponse02.map {response01 in
+                        if response01.status == .ok {
+                            return client.eventLoop.makeSucceededFuture(true)
+                        } else {
+                            logger.notice("No response from ModelsService.")
+                            return client.eventLoop.makeSucceededFuture(false)
+                        }
+                    }.flatMap{$0}
+                }
+            } else {
+                logger.notice("No response from UsersService.")
+                return client.eventLoop.makeSucceededFuture(false)
+            }
+        }.flatMap{$0}
     }
 }
