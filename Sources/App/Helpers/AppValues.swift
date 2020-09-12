@@ -7,23 +7,23 @@ import Fluent
 import SwiftHelperCode
 
 class AppValues {
-    
+
     // Microservices
-    static var USHost   = "vegiwoo.online"
-    static var USPort   = "8081"
+    static var USHost   = "localhost"
+    static var USPort   = "8802"
     static var USApiVer = "v1.1"
-    
+
     static var MSHost   = "localhost"
     static var MSPort   = "8803"
     static var MSApiVer = "v1.1"
-    
+
     // Tokens lifetime
     static let accessTokenLifeTime  : (component: Calendar.Component, value: Int) = (.hour, 4)
     static let refreshTokenLifeTime : (component: Calendar.Component, value: Int) = (.day, 7)
-    
+
     // Other
     static let microserviceHealthMessage : String = "RootService work!"
-    
+
     /// Creates a payload -> accessToken and refreshToken for user.
     /// - Parameters:
     ///   - req: Request.
@@ -47,7 +47,7 @@ class AppValues {
         // 6. Return.
         return RefreshTokenResponse01(accessToken: accessToken, refreshToken: refreshToken)
     }
-    
+
     /// Creates a payload -> accessToken for microservice.
     /// - Parameter req: Request.
     /// - Throws: Function can throw errors.
@@ -60,17 +60,17 @@ class AppValues {
         // 3. Generate accessToken and return.
         return try req.application.jwt.signers.sign(accessTokenPayload)
     }
-    
+
     /// Retrieves a tuple of user data from request's accessToken payload.
     /// - Parameter req: Request.
     /// - Throws: An error where accessToken cannot be read.
     /// - Returns: User data tuple.
     static func getUserInfoFromAccessToken (req: Request) throws -> (userid: Int?, username: String?, userRights: UserRights01, userStatus: UserStatus01){
-        
+
         if let accessToken = req.headers.bearerAuthorization?.token.utf8 {
             let payload = try req.jwt.verify(Array(accessToken), as: UsersPayload.self)
             return(payload.userid, payload.username, payload.userRights, payload.userStatus)
-            
+
         } else {
             throw Abort(.unauthorized, reason: "Missing required request component - accessToken.")
         }
@@ -85,10 +85,10 @@ class AppValues {
     /// - Throws: Function can throw errors.
     /// - Returns: Boolean flag of validation performed.
     static func checkingAccessRightsForRequest (userId: Int?, userName: String?, req: Request) throws -> EventLoopFuture<Bool> {
-       
+
         // 1. Getting information about requestor from token.
         let valuesFromToken = try AppValues.getUserInfoFromAccessToken(req: req)
-        
+
         guard let requestorId = valuesFromToken.userid, let requestorUsername = valuesFromToken.username else {
             throw Abort(.badRequest, reason: "Access token of requestor does not contain user's identifier")
         }
@@ -99,16 +99,16 @@ class AppValues {
             .first()
             .unwrap(or: Abort(.notFound, reason: "DB does not contain status and access rights of requestor."))
             .flatMapThrowing { requestorAccessRights  -> Bool in
-                
+
                 // 3. Check - status of requestor cannot be "blocked" or "archived".
                 guard requestorAccessRights.userStatus != .blocked, requestorAccessRights.userStatus != .archived else {
                     throw Abort (HTTPStatus.forbidden, reason: "Status of user is blocked or deleted. Contact administration of service on issue of restoring access.")
                 }
-                
+
                 // 4. If requestor is superadmin or admin - further actions are allowed.
                 if requestorAccessRights.userRights == .admin || requestorAccessRights.userRights == .superadmin {
                     return true
-                    
+
                 // 4.1 If requestor is user - only profile owner can access this resource.
                 } else {
                         // 4.1.1 If userId is recognized.
@@ -133,4 +133,3 @@ class AppValues {
             }.flatMap{return req.eventLoop.makeSucceededFuture($0)}
     }
 }
-
