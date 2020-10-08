@@ -7,6 +7,7 @@ import SwiftHelperCode
 
 public struct UsersPayload : JWTPayload {
 
+    // TODO: Dpricate, moved to SHC
     enum CodingKeys: String, CodingKey {
         case subject        = "sub"
         case expiration     = "exp"
@@ -31,6 +32,7 @@ public struct UsersPayload : JWTPayload {
 
 public struct MicroservicesPayload: JWTPayload, Equatable {
     
+    // TODO: Dpricate, moved to SHC
     enum CodingKeys: String, CodingKey {
         case subject = "sub"
         case expiration = "exp"

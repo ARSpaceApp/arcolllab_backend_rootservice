@@ -157,7 +157,7 @@ extension ModelsController : RouteCollection {
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
        
         // example: http://127.0.0.1:8801/v1.1/models
-        let modelsRoute012 =  modelsAuth.on(.POST,  body: .collect(maxSize: "20mb"),  use: jsonModelsStore)
+        let modelsRoute012 = modelsAuth.on(.POST,  body: .collect(maxSize: "200mb"),  use: jsonModelsStore)
         modelsRoute012.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
        

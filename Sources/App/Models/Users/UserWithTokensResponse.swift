@@ -8,6 +8,7 @@ extension RefreshTokenResponse01 : Content {}
 
 extension UserResponse01 : Content {}
 
+// Depricate -> Go to SHC!
 struct UserWithTokensResponse : Content {
     let tokens : RefreshTokenResponse01
     let user   : UserResponse01
