@@ -89,6 +89,13 @@ class ModelsController {
             req: req,
             clientRoute: US_MSVarsAndRoutes.modelsServiceModelsRoot.description)
     }
+    
+    func jsonModelsDeleteByParameter(req: Request) throws -> EventLoopFuture<ClientResponse>  {
+        return try self.modelsService.jsonModelsDeleteByParameter(
+            req: req,
+            clientRoute: US_MSVarsAndRoutes.modelsServiceModelsRoot.description
+        )
+    }
 }
 
 extension ModelsController : RouteCollection {
@@ -165,6 +172,11 @@ extension ModelsController : RouteCollection {
         let modelsRoute013 = modelsAuth.patch(":modelParameter", use: self.jsonModelsUpdateByParameter(req:))
         modelsRoute013.userInfo[.accessRight] =
             AccessRight(rights: [.superadmin, .admin, .user], statuses: [.confirmed])
+        
+        // example: http://127.0.0.1:8801/v1.1/models/:modelParameter
+        let modelsRoute014 = modelsAuth.delete(":modelParameter", use: self.jsonModelsDeleteByParameter(req:))
+        modelsRoute014.userInfo[.accessRight] =
+            AccessRight(rights: [.superadmin, .admin], statuses: [.confirmed])
     }
 }
 

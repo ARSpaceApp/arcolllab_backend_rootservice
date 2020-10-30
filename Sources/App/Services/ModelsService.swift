@@ -30,6 +30,8 @@ protocol ModelsService {
     func jsonModelsStore(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
     // Update existing model by parameter.
     func jsonModelsUpdateByParameter(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
+    // Delete existing model by id.
+    func jsonModelsDeleteByParameter(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse>
 }
 
 final class ModelsServiceImplementation : ModelsService {
@@ -170,6 +172,23 @@ final class ModelsServiceImplementation : ModelsService {
                 let input = try req.content.decode(ThreeDModelUpdateInput01.self)
                 try clientRequest.content.encode(input)
             }).flatMapThrowing{$0}
+        }
+    }
+    
+    func jsonModelsDeleteByParameter(req: Request, clientRoute: String) throws -> EventLoopFuture<ClientResponse> {
+        
+        guard let modelParameter = req.parameters.get("modelParameter"),
+              let modelId = Int(modelParameter) else {
+            throw Abort(.badRequest, reason: " Model ID is invalid.")
+        }
+        
+        let userData = try AppValues.getUserInfoFromAccessToken(req: req)
+        
+        if userData.userRights == .superadmin || userData.userRights == .admin {
+            let string = "\(clientRoute)/\(modelId)"
+            return req.client.delete(URI(string: string)).flatMapThrowing{$0}
+        } else {
+            throw Abort(HTTPResponseStatus.forbidden, reason: "Direct deletion of models is available only to administrators")
         }
     }
     
