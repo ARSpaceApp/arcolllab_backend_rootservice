@@ -110,7 +110,6 @@ fileprivate func storeSuperAdminUserAccessRights (db: Database, accessRights: Us
                 }
             }
     }
-
 }
 
 fileprivate func checkServiceAvailable (client: Client, logger: Logger)  -> EventLoopFuture<Bool> {

@@ -9,11 +9,11 @@ import SwiftHelperCode
 class AppValues {
 
     // Microservices
-    static var USHost   = "78.47.68.185"
+    static var USHost   = "194.58.104.211"
     static var USPort   = "8802"
     static var USApiVer = "v1.1"
 
-    static var MSHost   = "78.47.68.185"
+    static var MSHost   = "194.58.104.211"
     static var MSPort   = "8803"
     static var MSApiVer = "v1.1"
 
